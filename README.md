@@ -2,6 +2,8 @@
 
 This repository is an Ansible project for managing Cisco switches over SSH. It is not a web application or long-running service. You "run the application" by executing Ansible playbooks against the devices in the inventory.
 
+For the full step-by-step operator guide, see `GUIDE.md`.
+
 ## What this project contains
 
 - `inventory/hosts.yml`: list of switches and their management IPs
