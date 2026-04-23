@@ -1,0 +1,9 @@
+---
+- name: Back up running configuration from switches
+  hosts: cisco_switches
+  gather_facts: false
+  tasks:
+    - name: Gather running config
+      cisco.ios.ios_config:
+        backup: true
+

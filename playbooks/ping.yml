@@ -1,0 +1,14 @@
+---
+- name: Test SSH and network_cli access to switches
+  hosts: cisco_switches
+  gather_facts: false
+  tasks:
+    - name: Run show version
+      cisco.ios.ios_command:
+        commands:
+          - show version
+      register: show_version
+
+    - name: Print device version header
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: {{ show_version.stdout_lines[0][0] }}"

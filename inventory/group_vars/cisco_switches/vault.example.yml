@@ -1,0 +1,4 @@
+---
+# Copy this file to inventory/group_vars/cisco_switches/vault.yml and encrypt it with:
+# ansible-vault encrypt inventory/group_vars/cisco_switches/vault.yml
+vault_ansible_password: "replace-me"

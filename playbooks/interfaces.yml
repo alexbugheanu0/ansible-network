@@ -1,0 +1,12 @@
+---
+- name: Manage interface configuration on Cisco switches
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    interface_configs: []
+  tasks:
+    - name: Apply interface config
+      cisco.ios.ios_interfaces:
+        config: "{{ interface_configs }}"
+        state: merged
+      when: interface_configs | length > 0
