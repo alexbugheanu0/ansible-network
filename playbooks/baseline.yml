@@ -1,0 +1,11 @@
+---
+- name: Apply baseline configuration to Cisco switches
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    baseline_config_lines: []
+  tasks:
+    - name: Apply baseline configuration lines
+      cisco.ios.ios_config:
+        lines: "{{ baseline_config_lines }}"
+      when: baseline_config_lines | length > 0

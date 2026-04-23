@@ -1,0 +1,11 @@
+---
+- name: Manage local users on Cisco switches
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    local_users: []
+  tasks:
+    - name: Apply local user configuration
+      cisco.ios.ios_user:
+        aggregate: "{{ local_users }}"
+      when: local_users | length > 0

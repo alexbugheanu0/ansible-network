@@ -1,0 +1,23 @@
+---
+- name: Collect operational state from Cisco switches
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    audit_commands:
+      - show version
+      - show inventory
+      - show vlan brief
+      - show interfaces status
+      - show ip interface brief
+      - show mac address-table
+      - show cdp neighbors detail
+  tasks:
+    - name: Run operational show commands
+      cisco.ios.ios_command:
+        commands: "{{ audit_commands }}"
+      register: audit_output
+
+    - name: Print command output for review
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ audit_output.stdout }}"

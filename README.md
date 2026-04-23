@@ -9,8 +9,13 @@ This repository is an Ansible project for managing Cisco switches over SSH. It i
 - `inventory/group_vars/cisco_switches/vault.yml`: encrypted credentials file
 - `playbooks/ping.yml`: verifies SSH access by running `show version`
 - `playbooks/backup-config.yml`: backs up running configs
+- `playbooks/save-config.yml`: saves running config to startup config
 - `playbooks/vlans.yml`: creates or updates VLANs
 - `playbooks/interfaces.yml`: applies interface settings
+- `playbooks/interface-switchport.yml`: manages access and trunk port settings
+- `playbooks/baseline.yml`: applies standard shared switch configuration
+- `playbooks/users.yml`: manages local switch users
+- `playbooks/facts.yml`: gathers operational state with read-only show commands
 - `requirements.yml`: required Ansible collections
 - `ansible.cfg`: local Ansible defaults for this repo
 
@@ -148,6 +153,82 @@ What this does:
 - sets the description to `Office-PC-01`
 - ensures the interface is enabled
 
+### 5. Apply switchport mode, VLAN, and trunk settings
+
+Example:
+
+```bash
+ansible-playbook playbooks/interface-switchport.yml --ask-vault-pass -e '{
+  "switchport_configs": [
+    {
+      "name": "GigabitEthernet1/0/10",
+      "mode": "access",
+      "access": {
+        "vlan": 30
+      }
+    },
+    {
+      "name": "GigabitEthernet1/0/48",
+      "mode": "trunk",
+      "trunk": {
+        "native_vlan": 99,
+        "allowed_vlans": "10,20,30,99"
+      }
+    }
+  ]
+}'
+```
+
+### 6. Apply a baseline configuration
+
+Example:
+
+```bash
+ansible-playbook playbooks/baseline.yml --ask-vault-pass -e '{
+  "baseline_config_lines": [
+    "service timestamps debug datetime msec",
+    "service timestamps log datetime msec",
+    "no ip http server",
+    "no ip http secure-server",
+    "ip domain-name lab.local",
+    "ntp server 192.168.100.5"
+  ]
+}'
+```
+
+### 7. Manage local users
+
+Example:
+
+```bash
+ansible-playbook playbooks/users.yml --ask-vault-pass -e '{
+  "local_users": [
+    {
+      "name": "netadmin",
+      "configured_password": "StrongPassword123!",
+      "privilege": 15,
+      "state": "present"
+    }
+  ]
+}'
+```
+
+### 8. Collect operational facts
+
+This is a read-only audit playbook for common troubleshooting output.
+
+```bash
+ansible-playbook playbooks/facts.yml --ask-vault-pass
+```
+
+### 9. Save the running configuration
+
+Run this after successful changes so they survive a reboot.
+
+```bash
+ansible-playbook playbooks/save-config.yml --ask-vault-pass
+```
+
 ## How to make changes safely
 
 ### Change device IPs or add more switches
@@ -218,6 +299,54 @@ ansible-playbook playbooks/interfaces.yml --ask-vault-pass -e '{
 }'
 ```
 
+### Change switchport mode and VLAN assignments
+
+Pass a `switchport_configs` structure to `playbooks/interface-switchport.yml`:
+
+```bash
+ansible-playbook playbooks/interface-switchport.yml --ask-vault-pass -e '{
+  "switchport_configs": [
+    {
+      "name": "GigabitEthernet1/0/12",
+      "mode": "access",
+      "access": {
+        "vlan": 40
+      }
+    }
+  ]
+}'
+```
+
+### Apply common baseline settings across every switch
+
+Pass a list of config lines to `playbooks/baseline.yml`:
+
+```bash
+ansible-playbook playbooks/baseline.yml --ask-vault-pass -e '{
+  "baseline_config_lines": [
+    "logging host 192.168.100.50",
+    "snmp-server community readonly RO"
+  ]
+}'
+```
+
+### Add, change, or remove local users
+
+Use `playbooks/users.yml` with a `local_users` list:
+
+```bash
+ansible-playbook playbooks/users.yml --ask-vault-pass -e '{
+  "local_users": [
+    {
+      "name": "opsuser",
+      "configured_password": "AnotherStrongPassword123!",
+      "privilege": 15,
+      "state": "present"
+    }
+  ]
+}'
+```
+
 ## Recommended operating workflow
 
 Use this order for routine changes:
@@ -226,8 +355,9 @@ Use this order for routine changes:
 2. Confirm inventory and credentials are correct.
 3. Run `playbooks/ping.yml`.
 4. Run `playbooks/backup-config.yml`.
-5. Run the change playbook such as `playbooks/vlans.yml` or `playbooks/interfaces.yml`.
-6. Review the result output for failures or changed devices.
+5. Run the change playbook such as `playbooks/vlans.yml`, `playbooks/interfaces.yml`, `playbooks/interface-switchport.yml`, `playbooks/baseline.yml`, or `playbooks/users.yml`.
+6. Run `playbooks/save-config.yml`.
+7. Review the result output for failures or changed devices.
 
 ## Useful commands
 

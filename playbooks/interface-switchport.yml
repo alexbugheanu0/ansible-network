@@ -1,0 +1,12 @@
+---
+- name: Manage Layer 2 switchport configuration on Cisco switches
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    switchport_configs: []
+  tasks:
+    - name: Apply access and trunk switchport settings
+      cisco.ios.ios_l2_interfaces:
+        config: "{{ switchport_configs }}"
+        state: merged
+      when: switchport_configs | length > 0

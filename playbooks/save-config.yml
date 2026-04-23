@@ -1,0 +1,8 @@
+---
+- name: Save running configuration to startup configuration
+  hosts: cisco_switches
+  gather_facts: false
+  tasks:
+    - name: Save running config when changes are detected
+      cisco.ios.ios_config:
+        save_when: modified
