@@ -1,0 +1,18 @@
+---
+- name: Audit Cisco switch stack membership
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    stack_audit_commands:
+      - show switch
+      - show switch detail
+  tasks:
+    - name: Gather stack member output
+      cisco.ios.ios_command:
+        commands: "{{ stack_audit_commands }}"
+      register: stack_audit_output
+
+    - name: Print stack member output
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ stack_audit_output.stdout }}"

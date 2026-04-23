@@ -1,0 +1,27 @@
+---
+- name: Renumber Cisco switch stack members
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    confirm_stack_renumber: false
+    stack_renumber_commands: []
+    stack_reload_after_renumber: false
+  tasks:
+    - name: Require explicit confirmation before renumbering
+      ansible.builtin.assert:
+        that:
+          - confirm_stack_renumber | bool
+          - stack_renumber_commands | length > 0
+        fail_msg: "Set confirm_stack_renumber=true and provide stack_renumber_commands before running this playbook."
+
+    - name: Apply stack renumber commands
+      cisco.ios.ios_config:
+        lines: "{{ stack_renumber_commands }}"
+
+    - name: Reload stack after renumbering when requested
+      cisco.ios.ios_command:
+        commands:
+          - command: reload
+            prompt: "[confirm]"
+            answer: "\r"
+      when: stack_reload_after_renumber | bool

@@ -1,0 +1,19 @@
+---
+- name: Manage management SVI configuration on Cisco switches
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    management_svi_interfaces: []
+    management_svi_l3_configs: []
+  tasks:
+    - name: Apply management interface description and admin state
+      cisco.ios.ios_interfaces:
+        config: "{{ management_svi_interfaces }}"
+        state: merged
+      when: management_svi_interfaces | length > 0
+
+    - name: Apply management SVI Layer 3 settings
+      cisco.ios.ios_l3_interfaces:
+        config: "{{ management_svi_l3_configs }}"
+        state: merged
+      when: management_svi_l3_configs | length > 0

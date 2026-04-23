@@ -1,0 +1,20 @@
+---
+- name: Restore a saved configuration to Cisco switches
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    restore_config_file: ""
+  tasks:
+    - name: Require a restore file to be provided
+      ansible.builtin.assert:
+        that:
+          - restore_config_file | length > 0
+        fail_msg: "Set restore_config_file to the backup or config file you want to restore."
+
+    - name: Push the restore configuration file
+      cisco.ios.ios_config:
+        src: "{{ restore_config_file }}"
+
+    - name: Save restored configuration when changes are detected
+      cisco.ios.ios_config:
+        save_when: modified

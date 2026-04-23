@@ -1,0 +1,12 @@
+---
+- name: Manage ACLs on Cisco switches
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    acl_definitions: []
+  tasks:
+    - name: Apply ACL configuration
+      cisco.ios.ios_acls:
+        config: "{{ acl_definitions }}"
+        state: merged
+      when: acl_definitions | length > 0

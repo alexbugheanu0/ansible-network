@@ -1,0 +1,12 @@
+---
+- name: Manage static routes on Cisco switches
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    static_route_configs: []
+  tasks:
+    - name: Apply static routes
+      cisco.ios.ios_static_routes:
+        config: "{{ static_route_configs }}"
+        state: merged
+      when: static_route_configs | length > 0

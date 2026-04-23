@@ -1,0 +1,14 @@
+---
+- import_playbook: backup-config.yml
+- import_playbook: baseline.yml
+- import_playbook: vlans.yml
+- import_playbook: interfaces.yml
+- import_playbook: interface-switchport.yml
+- import_playbook: port-channels.yml
+- import_playbook: management-svi.yml
+- import_playbook: static-routes.yml
+- import_playbook: monitoring.yml
+- import_playbook: acls.yml
+- import_playbook: users.yml
+- import_playbook: save-config.yml
+- import_playbook: compliance.yml

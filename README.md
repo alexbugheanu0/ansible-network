@@ -20,6 +20,13 @@ This repository is an Ansible project for managing Cisco switches over SSH. It i
 - `playbooks/monitoring.yml`: configures syslog, NTP, and SNMP
 - `playbooks/aaa.yml`: applies AAA and TACACS/RADIUS related config lines
 - `playbooks/compliance.yml`: gathers compliance and platform audit output
+- `playbooks/acls.yml`: manages standard and extended ACLs
+- `playbooks/management-svi.yml`: manages management VLAN interfaces and IP addressing
+- `playbooks/static-routes.yml`: manages static routes
+- `playbooks/rollback-restore.yml`: restores a saved configuration file
+- `playbooks/stack-members.yml`: gathers switch stack membership details
+- `playbooks/stack-renumber.yml`: performs guarded stack renumber workflows
+- `playbooks/site-baseline.yml`: runs backup, change, save, and compliance playbooks in sequence
 - `requirements.yml`: required Ansible collections
 - `ansible.cfg`: local Ansible defaults for this repo
 
@@ -307,6 +314,124 @@ This is a read-only playbook for software version, license, inventory, VLAN, Eth
 ansible-playbook playbooks/compliance.yml --ask-vault-pass
 ```
 
+### 14. Configure ACLs
+
+Example:
+
+```bash
+ansible-playbook playbooks/acls.yml --ask-vault-pass -e '{
+  "acl_definitions": [
+    {
+      "afi": "ipv4",
+      "acls": [
+        {
+          "name": "MGMT_ONLY",
+          "acl_type": "extended",
+          "aces": [
+            {
+              "sequence": 10,
+              "grant": "permit",
+              "protocol": "ip",
+              "source": {
+                "address": "192.168.100.0",
+                "wildcard_bits": "0.0.0.255"
+              },
+              "destination": {
+                "any": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}'
+```
+
+### 15. Configure a management SVI
+
+Example:
+
+```bash
+ansible-playbook playbooks/management-svi.yml --ask-vault-pass -e '{
+  "management_svi_interfaces": [
+    {"name": "Vlan100", "description": "Management VLAN", "enabled": true}
+  ],
+  "management_svi_l3_configs": [
+    {
+      "name": "Vlan100",
+      "ipv4": [
+        {"address": "192.168.100.2/24"}
+      ]
+    }
+  ]
+}'
+```
+
+### 16. Configure static routes
+
+Example:
+
+```bash
+ansible-playbook playbooks/static-routes.yml --ask-vault-pass -e '{
+  "static_route_configs": [
+    {
+      "address_families": [
+        {
+          "afi": "ipv4",
+          "routes": [
+            {
+              "dest": "0.0.0.0/0",
+              "next_hops": [
+                {"forward_router_address": "192.168.100.1"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}'
+```
+
+### 17. Restore a configuration backup
+
+Provide a restore file that exists on the control node:
+
+```bash
+ansible-playbook playbooks/rollback-restore.yml --ask-vault-pass -e '{
+  "restore_config_file": "backup/SW-CORE-01_config.cfg"
+}'
+```
+
+### 18. Audit stack members
+
+```bash
+ansible-playbook playbooks/stack-members.yml --ask-vault-pass
+```
+
+### 19. Renumber stack members
+
+This workflow is intentionally guarded because it is disruptive.
+
+```bash
+ansible-playbook playbooks/stack-renumber.yml --ask-vault-pass -e '{
+  "confirm_stack_renumber": true,
+  "stack_renumber_commands": [
+    "switch 2 renumber 1"
+  ],
+  "stack_reload_after_renumber": true
+}'
+```
+
+### 20. Run the full site baseline workflow
+
+This orchestrator runs backup, standard config playbooks, save, and final compliance checks in one sequence.
+
+```bash
+ansible-playbook playbooks/site-baseline.yml --ask-vault-pass
+```
+
 ## How to make changes safely
 
 ### Change device IPs or add more switches
@@ -469,6 +594,92 @@ ansible-playbook playbooks/aaa.yml --ask-vault-pass -e '{
 }'
 ```
 
+### Change management SVI settings
+
+Use `playbooks/management-svi.yml` with interface and Layer 3 variables:
+
+```bash
+ansible-playbook playbooks/management-svi.yml --ask-vault-pass -e '{
+  "management_svi_interfaces": [
+    {"name": "Vlan200", "description": "OOB Management", "enabled": true}
+  ],
+  "management_svi_l3_configs": [
+    {
+      "name": "Vlan200",
+      "ipv4": [
+        {"address": "10.20.30.2/24"}
+      ]
+    }
+  ]
+}'
+```
+
+### Change static routes
+
+Use `playbooks/static-routes.yml` with a `static_route_configs` list:
+
+```bash
+ansible-playbook playbooks/static-routes.yml --ask-vault-pass -e '{
+  "static_route_configs": [
+    {
+      "address_families": [
+        {
+          "afi": "ipv4",
+          "routes": [
+            {
+              "dest": "10.10.0.0/16",
+              "next_hops": [
+                {"forward_router_address": "192.168.100.254", "distance_metric": 10}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}'
+```
+
+### Change ACLs
+
+Use `playbooks/acls.yml` with `acl_definitions`:
+
+```bash
+ansible-playbook playbooks/acls.yml --ask-vault-pass -e '{
+  "acl_definitions": [
+    {
+      "afi": "ipv4",
+      "acls": [
+        {
+          "name": "BLOCK_TELNET",
+          "acl_type": "extended",
+          "aces": [
+            {
+              "sequence": 10,
+              "grant": "deny",
+              "protocol": "tcp",
+              "source": {"any": true},
+              "destination": {"any": true, "port_protocol": {"eq": "telnet"}}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}'
+```
+
+### Restore from a saved file
+
+Use `playbooks/rollback-restore.yml` and point `restore_config_file` at a known-good backup file.
+
+### Renumber stack members safely
+
+1. Run `playbooks/stack-members.yml`.
+2. Review current member numbering and priorities.
+3. Run `playbooks/stack-renumber.yml` with `confirm_stack_renumber=true`.
+4. Reload only if your model and maintenance window allow it.
+
 ## Recommended operating workflow
 
 Use this order for routine changes:
@@ -477,10 +688,16 @@ Use this order for routine changes:
 2. Confirm inventory and credentials are correct.
 3. Run `playbooks/ping.yml`.
 4. Run `playbooks/backup-config.yml`.
-5. Run the change playbook such as `playbooks/vlans.yml`, `playbooks/interfaces.yml`, `playbooks/interface-switchport.yml`, `playbooks/port-channels.yml`, `playbooks/baseline.yml`, `playbooks/users.yml`, `playbooks/monitoring.yml`, or `playbooks/aaa.yml`.
+5. Run the change playbook such as `playbooks/vlans.yml`, `playbooks/interfaces.yml`, `playbooks/interface-switchport.yml`, `playbooks/port-channels.yml`, `playbooks/management-svi.yml`, `playbooks/static-routes.yml`, `playbooks/baseline.yml`, `playbooks/monitoring.yml`, `playbooks/acls.yml`, `playbooks/users.yml`, or `playbooks/aaa.yml`.
 6. Run `playbooks/save-config.yml`.
 7. Run `playbooks/compliance.yml` or `playbooks/facts.yml` to verify the final state.
 8. Review the result output for failures or changed devices.
+
+## Caution
+
+- `playbooks/rollback-restore.yml` can overwrite working config with a backup file. Use it only with a known-good restore file.
+- `playbooks/stack-renumber.yml` is disruptive and may require a reload. Use it only in a maintenance window after checking your stack state with `playbooks/stack-members.yml`.
+- `playbooks/site-baseline.yml` imports many playbooks in sequence. Only pass variables you actually intend to apply during that run.
 
 ## Useful commands
 
