@@ -1,0 +1,11 @@
+---
+- name: Apply AAA and TACACS baseline on Cisco switches
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    aaa_config_lines: []
+  tasks:
+    - name: Apply AAA configuration lines
+      cisco.ios.ios_config:
+        lines: "{{ aaa_config_lines }}"
+      when: aaa_config_lines | length > 0

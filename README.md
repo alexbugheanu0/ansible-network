@@ -13,9 +13,13 @@ This repository is an Ansible project for managing Cisco switches over SSH. It i
 - `playbooks/vlans.yml`: creates or updates VLANs
 - `playbooks/interfaces.yml`: applies interface settings
 - `playbooks/interface-switchport.yml`: manages access and trunk port settings
+- `playbooks/port-channels.yml`: manages EtherChannel and port-channel membership
 - `playbooks/baseline.yml`: applies standard shared switch configuration
 - `playbooks/users.yml`: manages local switch users
 - `playbooks/facts.yml`: gathers operational state with read-only show commands
+- `playbooks/monitoring.yml`: configures syslog, NTP, and SNMP
+- `playbooks/aaa.yml`: applies AAA and TACACS/RADIUS related config lines
+- `playbooks/compliance.yml`: gathers compliance and platform audit output
 - `requirements.yml`: required Ansible collections
 - `ansible.cfg`: local Ansible defaults for this repo
 
@@ -229,6 +233,80 @@ Run this after successful changes so they survive a reboot.
 ansible-playbook playbooks/save-config.yml --ask-vault-pass
 ```
 
+### 10. Configure port-channels
+
+Example:
+
+```bash
+ansible-playbook playbooks/port-channels.yml --ask-vault-pass -e '{
+  "port_channel_configs": [
+    {
+      "name": "Port-channel10",
+      "members": [
+        {"member": "GigabitEthernet1/0/47", "mode": "active"},
+        {"member": "GigabitEthernet1/0/48", "mode": "active"}
+      ]
+    }
+  ]
+}'
+```
+
+### 11. Configure syslog, NTP, and SNMP
+
+Example:
+
+```bash
+ansible-playbook playbooks/monitoring.yml --ask-vault-pass -e '{
+  "logging_global_config": {
+    "hosts": [
+      {"hostname": "192.168.100.50"}
+    ],
+    "trap": "informational",
+    "logging_on": "enable"
+  },
+  "ntp_global_config": {
+    "servers": [
+      {"server": "192.168.100.5"}
+    ],
+    "logging": true
+  },
+  "snmp_server_config": {
+    "contact": "Network Team",
+    "location": "Main MDF",
+    "communities": [
+      {"name": "readonly", "ro": true}
+    ]
+  }
+}'
+```
+
+### 12. Apply AAA and TACACS settings
+
+Use variable-driven config lines so you can match your IOS syntax and authentication design.
+
+```bash
+ansible-playbook playbooks/aaa.yml --ask-vault-pass -e '{
+  "aaa_config_lines": [
+    "aaa new-model",
+    "tacacs server ISE-1",
+    " address ipv4 192.168.100.60",
+    " key 7 070C285F4D06",
+    "aaa group server tacacs+ TACACS-SERVERS",
+    " server name ISE-1",
+    "aaa authentication login default group TACACS-SERVERS local",
+    "aaa authorization exec default group TACACS-SERVERS local if-authenticated"
+  ]
+}'
+```
+
+### 13. Run a compliance audit
+
+This is a read-only playbook for software version, license, inventory, VLAN, EtherChannel, and neighbor checks.
+
+```bash
+ansible-playbook playbooks/compliance.yml --ask-vault-pass
+```
+
 ## How to make changes safely
 
 ### Change device IPs or add more switches
@@ -347,6 +425,50 @@ ansible-playbook playbooks/users.yml --ask-vault-pass -e '{
 }'
 ```
 
+### Change EtherChannel members
+
+Use `playbooks/port-channels.yml` with a `port_channel_configs` list:
+
+```bash
+ansible-playbook playbooks/port-channels.yml --ask-vault-pass -e '{
+  "port_channel_configs": [
+    {
+      "name": "Port-channel20",
+      "members": [
+        {"member": "GigabitEthernet1/0/23", "mode": "active"},
+        {"member": "GigabitEthernet1/0/24", "mode": "active"}
+      ]
+    }
+  ]
+}'
+```
+
+### Change syslog, NTP, or SNMP settings
+
+Use `playbooks/monitoring.yml` and pass only the sections you want to change:
+
+```bash
+ansible-playbook playbooks/monitoring.yml --ask-vault-pass -e '{
+  "logging_global_config": {
+    "hosts": [
+      {"hostname": "192.168.100.51"}
+    ]
+  }
+}'
+```
+
+### Change AAA or TACACS configuration
+
+Use `playbooks/aaa.yml` with an explicit config line list:
+
+```bash
+ansible-playbook playbooks/aaa.yml --ask-vault-pass -e '{
+  "aaa_config_lines": [
+    "aaa authentication login default local"
+  ]
+}'
+```
+
 ## Recommended operating workflow
 
 Use this order for routine changes:
@@ -355,9 +477,10 @@ Use this order for routine changes:
 2. Confirm inventory and credentials are correct.
 3. Run `playbooks/ping.yml`.
 4. Run `playbooks/backup-config.yml`.
-5. Run the change playbook such as `playbooks/vlans.yml`, `playbooks/interfaces.yml`, `playbooks/interface-switchport.yml`, `playbooks/baseline.yml`, or `playbooks/users.yml`.
+5. Run the change playbook such as `playbooks/vlans.yml`, `playbooks/interfaces.yml`, `playbooks/interface-switchport.yml`, `playbooks/port-channels.yml`, `playbooks/baseline.yml`, `playbooks/users.yml`, `playbooks/monitoring.yml`, or `playbooks/aaa.yml`.
 6. Run `playbooks/save-config.yml`.
-7. Review the result output for failures or changed devices.
+7. Run `playbooks/compliance.yml` or `playbooks/facts.yml` to verify the final state.
+8. Review the result output for failures or changed devices.
 
 ## Useful commands
 

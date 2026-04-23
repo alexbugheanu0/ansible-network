@@ -1,0 +1,12 @@
+---
+- name: Manage port-channels on Cisco switches
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    port_channel_configs: []
+  tasks:
+    - name: Apply port-channel membership and mode
+      cisco.ios.ios_lag_interfaces:
+        config: "{{ port_channel_configs }}"
+        state: merged
+      when: port_channel_configs | length > 0

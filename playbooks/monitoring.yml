@@ -1,0 +1,26 @@
+---
+- name: Configure logging, NTP, and SNMP on Cisco switches
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    logging_global_config: {}
+    ntp_global_config: {}
+    snmp_server_config: {}
+  tasks:
+    - name: Apply syslog configuration
+      cisco.ios.ios_logging_global:
+        config: "{{ logging_global_config }}"
+        state: merged
+      when: logging_global_config | length > 0
+
+    - name: Apply NTP configuration
+      cisco.ios.ios_ntp_global:
+        config: "{{ ntp_global_config }}"
+        state: merged
+      when: ntp_global_config | length > 0
+
+    - name: Apply SNMP server configuration
+      cisco.ios.ios_snmp_server:
+        config: "{{ snmp_server_config }}"
+        state: merged
+      when: snmp_server_config | length > 0

@@ -1,0 +1,24 @@
+---
+- name: Collect compliance and platform audit data from Cisco switches
+  hosts: cisco_switches
+  gather_facts: false
+  vars:
+    compliance_commands:
+      - show version
+      - show inventory
+      - show license summary
+      - show module
+      - show interfaces status
+      - show vlan brief
+      - show etherchannel summary
+      - show cdp neighbors detail
+  tasks:
+    - name: Run compliance show commands
+      cisco.ios.ios_command:
+        commands: "{{ compliance_commands }}"
+      register: compliance_output
+
+    - name: Print compliance output for review
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ compliance_output.stdout }}"
