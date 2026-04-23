@@ -26,7 +26,8 @@ This repository is an Ansible project for managing Cisco switches over SSH. It i
 ### 1. Open the project folder
 
 ```bash
-cd /home/alex/network-scripts/ansible-network
+git clone https://github.com/alexbugheanu0/ansible-network.git
+cd ansible-network
 ```
 
 ### 2. Activate the Python virtual environment
@@ -89,7 +90,7 @@ Open `inventory/hosts.yml` and confirm the switch names and `ansible_host` IP ad
 Every time you work with this repo:
 
 ```bash
-cd /home/alex/network-scripts/ansible-network
+cd ansible-network
 source ansible-venv/bin/activate
 ```
 
